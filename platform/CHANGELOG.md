@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.27](https://github.com/archestra-ai/archestra/compare/platform-v1.0.26...platform-v1.0.27) (2026-01-17)
+
+
+### Features
+
+* add free-text search to logs pages ([#2173](https://github.com/archestra-ai/archestra/issues/2173)) ([f3d1dc4](https://github.com/archestra-ai/archestra/commit/f3d1dc43d1c186a6e557deec909d40b637f14c3b))
+* add knowledge graph integration with LightRAG provider ([#2177](https://github.com/archestra-ai/archestra/issues/2177)) ([911c1f5](https://github.com/archestra-ai/archestra/commit/911c1f51a0582c65856702d01fe2e9c1f0165f4e))
+
 ## [1.0.26](https://github.com/archestra-ai/archestra/compare/platform-v1.0.25...platform-v1.0.26) (2026-01-16)
 
 
