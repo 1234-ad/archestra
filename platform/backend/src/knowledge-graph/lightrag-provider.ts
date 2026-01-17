@@ -4,7 +4,7 @@ import type {
   InsertDocumentParams,
   InsertDocumentResult,
   KnowledgeGraphProvider,
-  QueryMode,
+  QueryOptions,
   QueryResult,
 } from "@/types/knowledge-graph";
 
@@ -345,12 +345,15 @@ export class LightRAGProvider implements KnowledgeGraphProvider {
   /**
    * Query the knowledge graph
    * @param query - Natural language query
-   * @param mode - Query mode (local, global, hybrid, naive). Defaults to hybrid.
+   * @param options - Query options including mode and labels for LBAC filtering
    */
   async queryDocument(
     query: string,
-    mode: QueryMode = "hybrid",
+    options?: QueryOptions,
   ): Promise<QueryResult> {
+    const mode = options?.mode ?? "hybrid";
+    const labels = options?.labels;
+
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -358,6 +361,21 @@ export class LightRAGProvider implements KnowledgeGraphProvider {
 
       if (this.config.apiKey) {
         headers["X-API-Key"] = this.config.apiKey;
+      }
+
+      // TODO: When LightRAG supports metadata filtering (PR #2187), pass labels here
+      // to filter results based on Label-Based Access Control (LBAC).
+      // For now, we log the labels for auditing purposes but cannot filter at the provider level.
+      if (labels && labels.length > 0) {
+        logger.info(
+          {
+            query,
+            mode,
+            labelCount: labels.length,
+            labels: labels.map((l) => `${l.key}:${l.value}`),
+          },
+          "[KnowledgeGraph] Query with LBAC labels (filtering not yet supported by LightRAG)",
+        );
       }
 
       const url = joinUrl(this.config.apiUrl, "/query");
@@ -369,6 +387,8 @@ export class LightRAGProvider implements KnowledgeGraphProvider {
           body: JSON.stringify({
             query,
             mode,
+            // TODO: Add metadata filter when LightRAG supports it:
+            // metadata_filter: labels ? { labels: labels.map(l => ({ key: l.key, value: l.value })) } : undefined,
           }),
         },
         DOCUMENT_OPERATION_TIMEOUT_MS,

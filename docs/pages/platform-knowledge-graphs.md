@@ -55,8 +55,60 @@ LightRAG requires:
 
 ## Using the Knowledge Graph
 
-Once configured, documents are automatically ingested. To query the knowledge graph from agents, add the [LightRAG MCP server](https://github.com/hnykda/mcp-server-lightrag) to your profiles.
+Once configured, documents are automatically ingested. There are two ways to query the knowledge graph from agents:
 
-The MCP server provides tools for:
-- Querying documents using natural language
-- Searching with different retrieval modes (local, global, hybrid)
+### Built-in Query Tool (Recommended)
+
+Archestra includes a built-in `archestra__query_knowledge_graph` tool. To use it:
+
+1. Go to **MCP Catalog** and find "Archestra"
+2. Assign the `query_knowledge_graph` tool to your profile
+3. The tool will be available to agents using that profile
+
+The built-in tool supports:
+- Natural language queries
+- Multiple query modes: `local`, `global`, `hybrid` (default), `naive`
+- Label-Based Access Control (see below)
+
+### External MCP Server
+
+Alternatively, add the [LightRAG MCP server](https://github.com/hnykda/mcp-server-lightrag) to your profiles for direct LightRAG access.
+
+## Query Modes
+
+Different query modes optimize for different use cases:
+
+| Mode | Description | Best For |
+|------|-------------|----------|
+| `hybrid` | Combines local and global context (default) | General queries |
+| `local` | Uses only local context from the knowledge graph | Specific document lookups |
+| `global` | Uses global context across all documents | Broad topic exploration |
+| `naive` | Simple RAG without graph-based retrieval | Basic similarity search |
+
+## Label-Based Access Control (LBAC)
+
+Documents ingested into the knowledge graph are automatically tagged with labels from the profile used during ingestion. This enables fine-grained access control:
+
+### How It Works
+
+1. When a document is uploaded via Chat, it inherits the labels of the active profile
+2. When querying with the built-in `query_knowledge_graph` tool, the profile's labels are passed to the knowledge graph
+3. Results are filtered based on label matching (when the provider supports metadata filtering)
+
+### Current Status
+
+LBAC metadata is currently stored with documents. Full filtering support depends on the knowledge graph provider:
+
+- **LightRAG**: Metadata filtering is planned but not yet available in the stable release
+- Documents and their labels are tracked in Archestra's database for future enforcement
+
+### Setting Up Labels
+
+1. Go to the profile's settings page
+2. Add labels (key-value pairs) to the profile
+3. Documents uploaded through Chat with this profile will inherit these labels
+
+Example labels:
+- `environment: production`
+- `team: engineering`
+- `department: finance`

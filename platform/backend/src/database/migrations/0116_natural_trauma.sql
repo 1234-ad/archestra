@@ -21,4 +21,6 @@ ALTER TABLE "knowledge_graph_document_labels" ADD CONSTRAINT "knowledge_graph_do
 ALTER TABLE "knowledge_graph_document_labels" ADD CONSTRAINT "knowledge_graph_document_labels_value_id_label_values_id_fk" FOREIGN KEY ("value_id") REFERENCES "public"."label_values"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "knowledge_graph_documents" ADD CONSTRAINT "knowledge_graph_documents_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "knowledge_graph_documents" ADD CONSTRAINT "knowledge_graph_documents_created_by_user_id_user_id_fk" FOREIGN KEY ("created_by_user_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "knowledge_graph_documents" ADD CONSTRAINT "knowledge_graph_documents_created_by_agent_id_agents_id_fk" FOREIGN KEY ("created_by_agent_id") REFERENCES "public"."agents"("id") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "knowledge_graph_documents" ADD CONSTRAINT "knowledge_graph_documents_created_by_agent_id_agents_id_fk" FOREIGN KEY ("created_by_agent_id") REFERENCES "public"."agents"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "kg_docs_external_document_id_idx" ON "knowledge_graph_documents" USING btree ("external_document_id");--> statement-breakpoint
+CREATE INDEX "kg_docs_organization_id_idx" ON "knowledge_graph_documents" USING btree ("organization_id");

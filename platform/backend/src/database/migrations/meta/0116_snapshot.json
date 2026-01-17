@@ -1,6 +1,6 @@
 {
-  "id": "1e0e6ba2-e2a4-41f8-9c38-2a82b6ebebc7",
-  "prevId": "d37fa08d-08b7-4ef9-9694-19205354903b",
+  "id": "01ee1d1e-8ebf-4e72-973e-517ff950810b",
+  "prevId": "1e0e6ba2-e2a4-41f8-9c38-2a82b6ebebc7",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1913,7 +1913,38 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "kg_docs_external_document_id_idx": {
+          "name": "kg_docs_external_document_id_idx",
+          "columns": [
+            {
+              "expression": "external_document_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "kg_docs_organization_id_idx": {
+          "name": "kg_docs_organization_id_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "knowledge_graph_documents_organization_id_organization_id_fk": {
           "name": "knowledge_graph_documents_organization_id_organization_id_fk",

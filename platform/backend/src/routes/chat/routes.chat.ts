@@ -163,21 +163,41 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
       // Extract and ingest documents to knowledge graph (fire and forget)
       // This runs asynchronously after we have the conversation context
       // for Label-Based Access Control (LBAC)
-      AgentLabelModel.getLabelsForAgent(conversation.agentId)
-        .then((labels) =>
-          extractAndIngestDocuments(messages, {
-            organizationId,
-            userId: user.id,
-            agentId: conversation.agentId,
-            labels,
-          }),
-        )
-        .catch((error) => {
-          logger.warn(
-            { error: error instanceof Error ? error.message : String(error) },
-            "[Chat] Background document ingestion failed",
+      (async () => {
+        // Try to get labels, but fall back to empty array if it fails
+        let labels: Awaited<
+          ReturnType<typeof AgentLabelModel.getLabelsForAgent>
+        > = [];
+        try {
+          labels = await AgentLabelModel.getLabelsForAgent(
+            conversation.agentId,
           );
+        } catch (labelError) {
+          logger.warn(
+            {
+              error:
+                labelError instanceof Error
+                  ? labelError.message
+                  : String(labelError),
+              agentId: conversation.agentId,
+            },
+            "[Chat] Failed to get labels for document ingestion, proceeding without labels",
+          );
+        }
+
+        // Always attempt ingestion, even if label retrieval failed
+        await extractAndIngestDocuments(messages, {
+          organizationId,
+          userId: user.id,
+          agentId: conversation.agentId,
+          labels,
         });
+      })().catch((error) => {
+        logger.warn(
+          { error: error instanceof Error ? error.message : String(error) },
+          "[Chat] Background document ingestion failed",
+        );
+      });
 
       // Use prompt ID as external agent ID if available, otherwise use header value
       // This allows prompt names to be displayed in LLM proxy logs

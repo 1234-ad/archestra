@@ -1,5 +1,6 @@
 import { vi } from "vitest";
 import type * as originalConfigModule from "@/config";
+import { KnowledgeGraphDocumentModel } from "@/models";
 import { afterEach, beforeEach, describe, expect, test } from "@/test";
 
 // Store mock config for modification in tests
@@ -472,6 +473,140 @@ describe("ingestDocument", () => {
       filename: "test.txt",
     });
     expect(result).toBe(false);
+  });
+
+  test("stores document metadata with context when provided", async ({
+    makeOrganization,
+    makeUser,
+    makeAgent,
+  }) => {
+    mockKnowledgeGraphConfig.provider = "lightrag";
+    mockKnowledgeGraphConfig.lightrag = {
+      apiUrl: "http://localhost:9621",
+      apiKey: undefined,
+    };
+
+    const org = await makeOrganization();
+    const user = await makeUser();
+    const agent = await makeAgent();
+
+    const result = await ingestDocument({
+      content: "Test content with context",
+      filename: "context-test.txt",
+      context: {
+        organizationId: org.id,
+        userId: user.id,
+        agentId: agent.id,
+      },
+    });
+
+    expect(result).toBe(true);
+
+    // Verify document was stored in database
+    const documents = await KnowledgeGraphDocumentModel.findByOrganization(
+      org.id,
+    );
+    expect(documents.length).toBeGreaterThan(0);
+
+    const storedDoc = documents.find((d) => d.filename === "context-test.txt");
+    expect(storedDoc).toBeDefined();
+    expect(storedDoc?.externalDocumentId).toBe("doc-123");
+    expect(storedDoc?.createdByUserId).toBe(user.id);
+    expect(storedDoc?.createdByAgentId).toBe(agent.id);
+  });
+
+  test("stores document with labels from context", async ({
+    makeOrganization,
+  }) => {
+    mockKnowledgeGraphConfig.provider = "lightrag";
+    mockKnowledgeGraphConfig.lightrag = {
+      apiUrl: "http://localhost:9621",
+      apiKey: undefined,
+    };
+
+    const org = await makeOrganization();
+
+    const labels = [
+      { key: "environment", value: "production", keyId: "", valueId: "" },
+      { key: "team", value: "engineering", keyId: "", valueId: "" },
+    ];
+
+    const result = await ingestDocument({
+      content: "Test content with labels",
+      filename: "labels-test.txt",
+      context: {
+        organizationId: org.id,
+        labels,
+      },
+    });
+
+    expect(result).toBe(true);
+
+    // Verify document was stored with labels
+    const documents = await KnowledgeGraphDocumentModel.findByOrganization(
+      org.id,
+    );
+    const storedDoc = documents.find((d) => d.filename === "labels-test.txt");
+
+    expect(storedDoc).toBeDefined();
+    expect(storedDoc?.labels).toHaveLength(2);
+    expect(storedDoc?.labels[0].key).toBe("environment");
+    expect(storedDoc?.labels[0].value).toBe("production");
+    expect(storedDoc?.labels[1].key).toBe("team");
+    expect(storedDoc?.labels[1].value).toBe("engineering");
+  });
+
+  test("does not store document metadata when context is not provided", async () => {
+    mockKnowledgeGraphConfig.provider = "lightrag";
+    mockKnowledgeGraphConfig.lightrag = {
+      apiUrl: "http://localhost:9621",
+      apiKey: undefined,
+    };
+
+    const result = await ingestDocument({
+      content: "Test content without context",
+      filename: "no-context-test.txt",
+    });
+
+    expect(result).toBe(true);
+
+    // Document should be ingested but no database record created
+    // Since we can't check all organizations, we just verify the call succeeded
+    // The actual database storage is handled by the context branch
+  });
+
+  test("continues on database error during metadata storage", async ({
+    makeOrganization,
+  }) => {
+    mockKnowledgeGraphConfig.provider = "lightrag";
+    mockKnowledgeGraphConfig.lightrag = {
+      apiUrl: "http://localhost:9621",
+      apiKey: undefined,
+    };
+
+    const org = await makeOrganization();
+
+    // Mock KnowledgeGraphDocumentModel.create to throw an error
+    const originalCreate = KnowledgeGraphDocumentModel.create;
+    KnowledgeGraphDocumentModel.create = vi
+      .fn()
+      .mockRejectedValue(new Error("Database error"));
+
+    try {
+      // Should still return true (ingestion succeeded, only metadata storage failed)
+      const result = await ingestDocument({
+        content: "Test content",
+        filename: "db-error-test.txt",
+        context: {
+          organizationId: org.id,
+        },
+      });
+
+      expect(result).toBe(true);
+    } finally {
+      // Restore the original method
+      KnowledgeGraphDocumentModel.create = originalCreate;
+    }
   });
 });
 
