@@ -1,5 +1,7 @@
 import config from "@/config";
 import logger from "@/logging";
+import { KnowledgeGraphDocumentModel } from "@/models";
+import type { AgentLabelWithDetails } from "@/types";
 import type {
   KnowledgeGraphConfig,
   KnowledgeGraphProvider,
@@ -244,18 +246,37 @@ export async function cleanupKnowledgeGraphProvider(): Promise<void> {
 }
 
 /**
+ * Context for document ingestion (used for LBAC - Label-Based Access Control)
+ */
+export interface IngestDocumentContext {
+  /** Organization the document belongs to */
+  organizationId: string;
+  /** User who uploaded the document (optional) */
+  userId?: string;
+  /** Agent/profile used when uploading (optional) */
+  agentId?: string;
+  /** Labels to associate with the document for access control */
+  labels?: AgentLabelWithDetails[];
+}
+
+/**
  * Ingest a document into the knowledge graph
  * This is the main entry point for document ingestion from chat uploads
+ *
+ * If context is provided, the document metadata will be stored in the database
+ * for Label-Based Access Control (LBAC) purposes.
  *
  * @param content - The document content to ingest
  * @param filename - Optional filename for the document
  * @param metadata - Optional metadata to associate with the document
+ * @param context - Optional context for LBAC (organization, user, agent, labels)
  * @returns true if ingestion was successful/queued, false otherwise
  */
 export async function ingestDocument(params: {
   content: string;
   filename?: string;
   metadata?: Record<string, unknown>;
+  context?: IngestDocumentContext;
 }): Promise<boolean> {
   const provider = getKnowledgeGraphProvider();
 
@@ -265,7 +286,11 @@ export async function ingestDocument(params: {
   }
 
   try {
-    const result = await provider.insertDocument(params);
+    const result = await provider.insertDocument({
+      content: params.content,
+      filename: params.filename,
+      metadata: params.metadata,
+    });
 
     if (result.status === "failed") {
       logger.warn(
@@ -276,6 +301,39 @@ export async function ingestDocument(params: {
         "[KnowledgeGraph] Document ingestion failed",
       );
       return false;
+    }
+
+    // Store document metadata in the database for LBAC
+    if (params.context) {
+      try {
+        await KnowledgeGraphDocumentModel.create({
+          externalDocumentId: result.documentId,
+          filename: params.filename,
+          organizationId: params.context.organizationId,
+          createdByUserId: params.context.userId,
+          createdByAgentId: params.context.agentId,
+          labels: params.context.labels,
+        });
+
+        logger.debug(
+          {
+            filename: params.filename,
+            documentId: result.documentId,
+            labelCount: params.context.labels?.length || 0,
+          },
+          "[KnowledgeGraph] Document metadata stored for LBAC",
+        );
+      } catch (dbError) {
+        // Log but don't fail - document is already in knowledge graph
+        logger.warn(
+          {
+            filename: params.filename,
+            documentId: result.documentId,
+            error: dbError instanceof Error ? dbError.message : String(dbError),
+          },
+          "[KnowledgeGraph] Failed to store document metadata for LBAC",
+        );
+      }
     }
 
     logger.info(

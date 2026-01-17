@@ -4,6 +4,7 @@ import type {
   InsertDocumentParams,
   InsertDocumentResult,
   KnowledgeGraphProvider,
+  QueryMode,
   QueryResult,
 } from "@/types/knowledge-graph";
 
@@ -343,8 +344,13 @@ export class LightRAGProvider implements KnowledgeGraphProvider {
 
   /**
    * Query the knowledge graph
+   * @param query - Natural language query
+   * @param mode - Query mode (local, global, hybrid, naive). Defaults to hybrid.
    */
-  async queryDocument(query: string): Promise<QueryResult> {
+  async queryDocument(
+    query: string,
+    mode: QueryMode = "hybrid",
+  ): Promise<QueryResult> {
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -362,7 +368,7 @@ export class LightRAGProvider implements KnowledgeGraphProvider {
           headers,
           body: JSON.stringify({
             query,
-            mode: "hybrid", // Use hybrid mode for best results
+            mode,
           }),
         },
         DOCUMENT_OPERATION_TIMEOUT_MS,

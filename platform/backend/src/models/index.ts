@@ -12,6 +12,7 @@ export { default as IncomingEmailSubscriptionModel } from "./incoming-email-subs
 export { default as InteractionModel } from "./interaction";
 export { default as InternalMcpCatalogModel } from "./internal-mcp-catalog";
 export { default as InvitationModel } from "./invitation";
+export { default as KnowledgeGraphDocumentModel } from "./knowledge-graph-document";
 export { default as LimitModel, LimitValidationService } from "./limit";
 export { default as McpServerModel } from "./mcp-server";
 export { default as McpServerInstallationRequestModel } from "./mcp-server-installation-request";

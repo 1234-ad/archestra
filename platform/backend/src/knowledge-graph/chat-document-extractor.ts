@@ -5,7 +5,11 @@ import {
   SUPPORTED_DOCUMENT_TYPES,
   SUPPORTED_EXTENSIONS,
 } from "./constants";
-import { ingestDocument, isKnowledgeGraphEnabled } from "./index";
+import {
+  type IngestDocumentContext,
+  ingestDocument,
+  isKnowledgeGraphEnabled,
+} from "./index";
 
 /**
  * Message part structure from AI SDK UIMessage
@@ -232,9 +236,11 @@ function extractDocumentContent(part: MessagePart): {
  * the chat response.
  *
  * @param messages - Array of messages from the chat request
+ * @param context - Optional context for LBAC (organization, user, agent, labels)
  */
 export async function extractAndIngestDocuments(
   messages: unknown[],
+  context?: IngestDocumentContext,
 ): Promise<void> {
   // Check if knowledge graph is enabled
   if (!isKnowledgeGraphEnabled()) {
@@ -297,6 +303,7 @@ export async function extractAndIngestDocuments(
       const promise: Promise<void> = ingestDocument({
         content: doc.content,
         filename: doc.filename,
+        context,
       })
         .then(() => {
           // Discard boolean return value, we just need void

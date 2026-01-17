@@ -16,6 +16,8 @@ export { default as incomingEmailSubscriptionsTable } from "./incoming-email-sub
 export { default as interactionsTable } from "./interaction";
 export { default as internalMcpCatalogTable } from "./internal-mcp-catalog";
 export { default as invitationsTable } from "./invitation";
+export { default as knowledgeGraphDocumentsTable } from "./knowledge-graph-document";
+export { default as knowledgeGraphDocumentLabelsTable } from "./knowledge-graph-document-label";
 export { default as labelKeysTable } from "./label-key";
 export { default as labelValuesTable } from "./label-value";
 export { default as limitsTable } from "./limit";
